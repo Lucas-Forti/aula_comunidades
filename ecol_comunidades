@@ -1,10 +1,12 @@
-Aula básica de Ecologia de Comunidades no R
-Lucas Rodriguez Forti – Curso de Ecologia
-13/03/2024
+## Aula básica de Ecologia de Comunidades no R ##
+   Lucas Rodriguez Forti – Curso de Ecologia
+                13/03/2024
+
 Abaixo encontraremos um script com os passos para organização de dados e obtenção de métricas em estudos de comunidades. 
 Para realização desta aula prática utilizaremos os dados de observações da biodiversidade de Mossoró de cada aluno realizadas pela plataforma do iNaturalist,
 organizados conforme a estrutura do modelo abaixo:
-Instalando e Carregando pacotes
+
+# Instalando e Carregando pacotes
 para instalar use:
 install.packages("ggplot2")
 install.packages("dplyr")
@@ -29,16 +31,17 @@ library(iNEXT)
 # para análise de comunidades 
 library(BiodiversityR)
 
-Trazendo os dados do excel
-Vamos acertar o diretório de trabalho com a função setwd() setwd(“caminho para o diretório de trabalho”)
-para trazer os seus dados vocês usarão a função read.csv2("nome do arquivo.csv”) 
-Veja no exemplo abaixo: 
+#Trazendo os dados do excel
+#Vamos acertar o diretório de trabalho com a função setwd() setwd(“caminho para o diretório de trabalho”)
+#para trazer os seus dados vocês usarão a função read.csv2("nome do arquivo.csv”) 
+#Veja no exemplo abaixo: 
 
 dados <-read.csv2("dados.csv") 
 View(dados)## para visualizar seus dados
 
-Criando a MATRIZ DE COMUNIDADE
-Em nossa matriz as linhas serão datas das coletas e as colunas são as espécies encontradas no estudo 
+# Criando a MATRIZ DE COMUNIDADE
+# Em nossa matriz as linhas serão datas das coletas e as colunas são as espécies encontradas no estudo 
+
 matrix <- dados %>% ##cria dataframe 
 "pivot" group_by(sp, data)%>% ##agrupa por espécies e data 
 summarise(obs = length(data))%>% ##soma ocorrências dentro das espécies 
@@ -46,8 +49,8 @@ spread(sp, obs) #distribui as ocorrências das espécies por data matrix # para 
 
 ## Tirar a primeira coluna "data"
 matrix$data <- NULL 
-### Precisamos trocar NA por 0 
 
+### Precisamos trocar NA por 0 
 matrix <- matrix %>% mutate_all(replace_na, 0) 
 matrix
 
@@ -55,7 +58,7 @@ matrix
 rownames(matrix) <- paste0("Dia", 1:nrow(matrix))
 View(matrix)
 
-MEDIDAS DE DIVERSIDADE ————————————————– 
+# MEDIDAS DE DIVERSIDADE ————————————————– 
 ## Riqueza de espécies 
 #riqueza parcial 
 riqueza <- specnumber(matrix) 
