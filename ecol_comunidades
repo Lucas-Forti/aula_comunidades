@@ -1,0 +1,139 @@
+Aula básica de Ecologia de Comunidades no R
+Lucas Rodriguez Forti – Curso de Ecologia
+13/03/2024
+Abaixo encontraremos um script com os passos para organização de dados e obtenção de métricas em estudos de comunidades. 
+Para realização desta aula prática utilizaremos os dados de observações da biodiversidade de Mossoró de cada aluno realizadas pela plataforma do iNaturalist,
+organizados conforme a estrutura do modelo abaixo:
+Instalando e Carregando pacotes
+para instalar use:
+install.packages("ggplot2")
+install.packages("dplyr")
+install.packages("tidyverse")
+install.packages("vegan")
+install.packages("forcats")
+install.packages("iNEXT")
+install.packages("BiodiversityR")
+Carregando os pacotes
+# para figuras bonitas 
+library(ggplot2)
+# para manipulação dos dados 
+library(dplyr) 
+# para manipulação dos dados 
+library(tidyverse) 
+# para análise de comunidades 
+library(vegan) 
+# ferramentas para dados categóricos 
+library(forcats) 
+# para análise de comunidades 
+library(iNEXT) 
+# para análise de comunidades 
+library(BiodiversityR)
+
+Trazendo os dados do excel
+Vamos acertar o diretório de trabalho com a função setwd() setwd(“caminho para o diretório de trabalho”)
+para trazer os seus dados vocês usarão a função read.csv2("nome do arquivo.csv”) 
+Veja no exemplo abaixo: 
+
+dados <-read.csv2("dados.csv") 
+View(dados)## para visualizar seus dados
+
+Criando a MATRIZ DE COMUNIDADE
+Em nossa matriz as linhas serão datas das coletas e as colunas são as espécies encontradas no estudo 
+matrix <- dados %>% ##cria dataframe 
+"pivot" group_by(sp, data)%>% ##agrupa por espécies e data 
+summarise(obs = length(data))%>% ##soma ocorrências dentro das espécies 
+spread(sp, obs) #distribui as ocorrências das espécies por data matrix # para visualizar a matriz
+
+## Tirar a primeira coluna "data"
+matrix$data <- NULL 
+### Precisamos trocar NA por 0 
+
+matrix <- matrix %>% mutate_all(replace_na, 0) 
+matrix
+
+##acertar os dias ordenados na fileira 
+rownames(matrix) <- paste0("Dia", 1:nrow(matrix))
+View(matrix)
+
+MEDIDAS DE DIVERSIDADE ————————————————– 
+## Riqueza de espécies 
+#riqueza parcial 
+riqueza <- specnumber(matrix) 
+riqueza 
+#riqueza total 
+riqueza_total <- specnumber(colSums(matrix)) 
+riqueza_total 
+
+## Diversidade de Shannon-Wiener (H') 
+# diversidade parcial 
+shannon <- diversity(matrix, index = "shannon") 
+shannon
+
+# diversidade total 
+shannon_total <- diversity(colSums(matrix), index = "shannon") 
+shannon_total 
+
+## Diversidade de Simpson (D)
+# diversidade parcial 
+simpson <- diversity(matrix, index = "simpson") 
+simpson 
+
+#diversidade total 
+simpson_total <- diversity(colSums(matrix), index = "simpson") 
+simpson_total 
+
+## Índice de Berger-Parker (Pacote BiodiversityR) 
+berger <- diversityresult(matrix, index='Berger', method = "pooled") 
+berger
+
+## Uniformidade de Shannon 
+eveness1 <- diversityresult(matrix, index='Jevenness', method = "pooled") # o Argumento "pooled" é para se referir à toda matriz como uma única comunidade 
+eveness1
+
+Curva do coletor 
+cuco <- accumresult(matrix, method='collector') 
+cuco 
+accumplot(cuco, xlab = "Dias de coleta", ylab = "Riqueza de espécies")
+
+Curva de rarefação 
+acumula <- specaccum(matrix, method = "rarefaction") 
+
+#gráfico feião 
+plot(acumula, xlab = "Dias de coleta", ylab = "Riqueza de espécies")
+
+#gráfico bonitão 
+plot_data <- data.frame("Individuals" = c(0, acumula$individuals),
+"Riqueza" = c(0, acumula$richness), "lower" = c(0, acumula$richness - acumula$sd),
+"upper" = c(0, acumula$richness + acumula$sd)) 
+
+g <- ggplot(plot_data, aes(x = Individuals, y = Riqueza)) + 
+geom_point(color = "darkgreen", size = 4) + 
+geom_line(color = "darkgreen", lwd = 2) + 
+geom_ribbon(aes(ymin = lower, ymax = upper), linetype=2, alpha=0.3, fill = "yellow") + 
+xlab("Dias de coleta") + ylab("Riqueza de espécies") + 
+theme_classic() + theme(text = element_text(size = 16)) 
+g
+
+Gráfico de Whittaker - Ranque de abundância 
+abund <- colSums(matrix) 
+df <- data.frame(sp = colnames(matrix), abun = abund) 
+g1 <- ggplot(df, aes(fct_reorder(sp, -abun), abun, group = 1))+ 
+geom_line(col = "red", linetype = "dashed") + 
+geom_point(col = "red") + 
+xlab("Espécies") + ylab("Abundância") + 
+theme_bw() + theme(axis.text.x = element_text( angle = 45, hjust = 1, face = "italic"), 
+plot.margin = unit(c(1, 1, 1, 1), "cm")) 
+
+g1
+
+Extrapolação da diversidade 
+out <- colSums(matrix) 
+abun <- iNEXT(out, q = 0, datatype = "abundance", endpoint = 100)
+abun # Visualizar os dados no gráfico 
+
+g2 <- ggiNEXT(abun, type = 1) + 
+theme_bw() + labs(fill = "Áreas") + 
+xlab("Número de indivíduos") + ylab("Riqueza de espécies") + 
+theme(legend.title=element_blank()) 
+g2
+Bacana?
